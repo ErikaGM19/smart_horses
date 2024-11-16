@@ -7,6 +7,8 @@ import time
 class Main():
     def __init__(self):
         self.tablero = self.generar_tablero()
+        self.turno_actual = "c1"  # Comienza el caballo blanco
+
 
     def generar_tablero(self):
         elementos = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 'x2', 'x2', 'x2', 'x2', 'c1', 'c2']
@@ -21,15 +23,17 @@ class InterfazTableroGUI:
     def __init__(self):
         self.ventana = tk.Tk()
         self.ventana.title("Smart Horses")
-        self.ventana.geometry('900x600')
+        self.ventana.geometry('900x650')
         self.ventana.configure(bg='#82dad3')
         self.crear_frames()
         self.crear_cuadricula()
         self.crear_widgets()
         self.imagenes = {}
         self.juego = None
+        self.casillas_resaltadas = []  # Para almacenar las casillas disponibles
+        self.posicion_seleccionada = None  # Para almacenar la posición del caballo seleccionado
         self.ventana.mainloop()
-
+        
     def cargar_imagenes(self):
         # Cargar imágenes y guardarlas en un diccionario
         self.imagenes["0"] = ImageTk.PhotoImage(Image.open("images/blanco.png").resize((self.tam_celda, self.tam_celda)))
@@ -128,8 +132,6 @@ class InterfazTableroGUI:
         )
         self.boton_limpiar.pack(side=tk.LEFT, padx=5)
 
-        
-
         self.boton_iniciar = tk.Button(
             frame_iniciar,
             text="Iniciar Juego",
@@ -150,6 +152,40 @@ class InterfazTableroGUI:
             bg='#82dad3'
         )
         self.mensaje_estado.pack(side=tk.BOTTOM, fill='x')
+
+        self.label_puntos_caballo_blanco = tk.Label(
+            self.content_frame,
+            text="Puntos Caballo Blanco: ",
+            bg='#82dad3',
+            font=tipo_fuente
+        )
+
+        self.label_puntos_caballo_blanco.place(x=10, y=10)
+        self.puntos_caballo_blanco = tk.Label(
+            self.content_frame,
+            text="0",
+            font=tipo_fuente,
+            bg='#6f96b4'
+        )
+
+        self.puntos_caballo_blanco.place(x=110, y=40)  
+        
+        self.label_puntos_caballo_negro = tk.Label(
+            self.content_frame,
+            text="Puntos Caballo Negro: ",
+            bg='#82dad3',
+            font=tipo_fuente
+        )
+
+        self.label_puntos_caballo_negro.place(x=10, y=110)
+        self.puntos_caballo_negro = tk.Label(
+            self.content_frame,
+            text="0",
+            font=tipo_fuente,
+            bg='#6f96b4'
+        )
+
+        self.puntos_caballo_negro.place(x=110, y=150)  
 
     def modo_juego_seleccionado_callback(self, event):
         modo = self.modo_juego.get()
@@ -196,8 +232,10 @@ class InterfazTableroGUI:
         self.dificultad_ia2.set("")
         self.dificultad_ia2.config(state="disabled")
         self.mensaje_estado.config(text="")
-
-
+        self.puntos_caballo_blanco.config(text="0")
+        self.puntos_caballo_negro.config(text="0")
+    
+  
     def iniciar_juego(self):
         self.cargar_imagenes()
         self.juego = Main()  
@@ -206,6 +244,84 @@ class InterfazTableroGUI:
         self.mensaje_estado.config(text="Tablero generado correctamente.")
         self.dificultad_ia1.config(state="disabled")
         self.dificultad_ia2.config(state="disabled")
+
+    def obtener_movimientos_posibles(self, fila, columna):
+        movimientos = []
+        # Todos los posibles movimientos del caballo
+        patrones = [
+            (-2, -1), (-2, 1),  # Arriba
+            (-1, -2), (-1, 2),  # Izquierda/Derecha arriba
+            (1, -2), (1, 2),    # Izquierda/Derecha abajo
+            (2, -1), (2, 1)     # Abajo
+        ]
+        
+        for df, dc in patrones:
+            nueva_fila = fila + df
+            nueva_col = columna + dc
+            if 0 <= nueva_fila < 8 and 0 <= nueva_col < 8:
+                # Verifica que la casilla destino no tenga otro caballo
+                if self.juego.tablero[nueva_fila][nueva_col] != "c1" and \
+                   self.juego.tablero[nueva_fila][nueva_col] != "c2":
+                    movimientos.append((nueva_fila, nueva_col))
+        return movimientos
+
+    def resaltar_movimientos_posibles(self, movimientos):
+        # Limpia resaltados anteriores
+        for casilla in self.casillas_resaltadas:
+            self.canvas.delete(casilla)
+        self.casillas_resaltadas.clear()
+
+        # Resalta las nuevas casillas disponibles
+        for fila, col in movimientos:
+            x1 = col * self.tam_celda
+            y1 = fila * self.tam_celda
+            x2 = x1 + self.tam_celda
+            y2 = y1 + self.tam_celda
+            # Crear un rectángulo semitransparente verde
+            resaltado = self.canvas.create_rectangle(
+                x1, y1, x2, y2,
+                fill='#00FF00',
+                stipple='gray50',
+                tags='resaltado'
+            )
+            self.casillas_resaltadas.append(resaltado)
+
+    def seleccionar_casilla(self, event):
+        col = event.x // self.tam_celda
+        fila = event.y // self.tam_celda
+        
+        # Si no hay una pieza seleccionada
+        if self.posicion_seleccionada is None:
+            # Verifica si la casilla contiene un caballo y si es su turno
+            if self.juego.tablero[fila][col] == self.juego.turno_actual:
+                self.posicion_seleccionada = (fila, col)
+                movimientos = self.obtener_movimientos_posibles(fila, col)
+                self.resaltar_movimientos_posibles(movimientos)
+                self.mensaje_estado.config(text=f"Caballo seleccionado. Seleccione destino.")
+        else:
+            # Verifica si la casilla destino es un movimiento válido
+            movimientos = self.obtener_movimientos_posibles(self.posicion_seleccionada[0], 
+                                                          self.posicion_seleccionada[1])
+            if (fila, col) in movimientos:
+                # Realiza el movimiento
+                fila_origen, col_origen = self.posicion_seleccionada
+                pieza = self.juego.tablero[fila_origen][col_origen]
+                self.juego.tablero[fila_origen][col_origen] = 0
+                self.juego.tablero[fila][col] = pieza
+                
+                # Cambiar turno
+                self.juego.turno_actual = "c2" if self.juego.turno_actual == "c1" else "c1"
+                
+                # Actualiza el tablero
+                self.dibujar_tablero()
+                self.mensaje_estado.config(text=f"Turno del {'caballo negro' if self.juego.turno_actual == 'c2' else 'caballo blanco'}")
+            else:
+                self.mensaje_estado.config(text="Movimiento inválido. Intente nuevamente.")
+            
+            # Limpia la selección y los resaltados
+            self.posicion_seleccionada = None
+            self.resaltar_movimientos_posibles([])
+
 
     def dibujar_tablero(self):
         self.canvas.delete("all")
@@ -228,6 +344,9 @@ class InterfazTableroGUI:
                     imagen = self.imagenes["c2"]
 
                 self.canvas.create_image(x1, y1, image=imagen, anchor="nw")
+        
+        # Vincular el evento de clic
+        self.canvas.bind("<Button-1>", self.seleccionar_casilla)
 
 # Ejecutar la interfaz
 InterfazTableroGUI()
