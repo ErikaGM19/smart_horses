@@ -1,4 +1,5 @@
 from board import Board
+from player import HumanPlayer, IAplayer
 
 
 class Game:
