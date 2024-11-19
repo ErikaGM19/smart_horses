@@ -53,7 +53,9 @@ class InterfazTableroGUI:
         self.juego = None
         self.casillas_resaltadas = []  # Para almacenar las casillas disponibles
         self.posicion_seleccionada = None  # Para almacenar la posición del caballo seleccionado
+        self.juego_terminado = False
         self.ventana.mainloop()
+        
 
     def obtener_movimientos_posibles_para_caballo(self, caballo):
         for i in range(8):
@@ -66,17 +68,28 @@ class InterfazTableroGUI:
 
 
     def verificar_fin_juego(self):
+        # Obtener movimientos posibles para ambos caballos
         movimientos_c1 = self.obtener_movimientos_posibles_para_caballo("c1")
         movimientos_c2 = self.obtener_movimientos_posibles_para_caballo("c2")
-        if not movimientos_c1 and not movimientos_c2:
+        
+        # Verificar si quedan puntos en el tablero
+        puntos_restantes = any(
+            isinstance(self.juego.tablero[i][j], int) and self.juego.tablero[i][j] > 0
+            for i in range(8)
+            for j in range(8)
+        )
+        
+        if (not movimientos_c1 and not movimientos_c2) or not puntos_restantes:
             if self.puntos_caballo_blanco_total > self.puntos_caballo_negro_total:
                 ganador = "¡Caballo Blanco gana!"
             elif self.puntos_caballo_blanco_total < self.puntos_caballo_negro_total:
                 ganador = "¡Caballo Negro gana!"
             else:
                 ganador = "¡Empate!"
+            
             messagebox.showinfo("Fin del Juego", f"El juego ha terminado.\n{ganador}")
             self.juego_terminado = True
+
 
         
     def cargar_imagenes(self):
@@ -283,12 +296,52 @@ class InterfazTableroGUI:
   
     def iniciar_juego(self):
         self.cargar_imagenes()
-        self.juego = Main()  
+        self.juego = Main()
         self.dibujar_tablero()
         self.boton_limpiar.config(state=tk.NORMAL)
         self.mensaje_estado.config(text="Tablero generado correctamente.")
         self.dificultad_ia1.config(state="disabled")
         self.dificultad_ia2.config(state="disabled")
+        self.modo_seleccionado = self.modo_juego.get()
+        if self.modo_seleccionado == "Humano vs IA":
+            if self.juego.turno_actual == "c1":  # Suponiendo que la IA juega con 'c1'
+                self.ventana.after(500, self.realizar_movimiento_ia)
+
+    def realizar_movimiento_ia(self):
+        # Obtener la posición del caballo de la IA
+        for i in range(8):
+            for j in range(8):
+                if self.juego.tablero[i][j] == self.juego.turno_actual:
+                    posicion_actual = (i, j)
+                    break
+
+        # Obtener movimientos posibles
+        movimientos = self.obtener_movimientos_posibles(posicion_actual[0], posicion_actual[1])
+
+        if movimientos:
+            # Aquí puedes implementar tu algoritmo Minimax para elegir el mejor movimiento
+            movimiento = random.choice(movimientos)  # Por simplicidad, elegimos un movimiento al azar
+            valor_casilla = self.juego.tablero[movimiento[0]][movimiento[1]]
+
+            # Realizar el movimiento
+            self.juego.tablero[posicion_actual[0]][posicion_actual[1]] = 0
+            self.juego.tablero[movimiento[0]][movimiento[1]] = self.juego.turno_actual
+
+            # Actualizar puntos
+            self.actualizar_puntos(self.juego.turno_actual, valor_casilla)
+
+            # Cambiar turno
+            self.juego.turno_actual = "c2"
+
+            # Actualizar el tablero
+            self.dibujar_tablero()
+            self.mensaje_estado.config(text="Turno del caballo negro")
+            self.verificar_fin_juego()
+        else:
+            self.mensaje_estado.config(text="La IA no tiene movimientos posibles.")
+            self.verificar_fin_juego()
+
+
 
     def obtener_movimientos_posibles(self, fila, columna):
         movimientos = []
@@ -334,6 +387,9 @@ class InterfazTableroGUI:
     def seleccionar_casilla(self, event):
         col = event.x // self.tam_celda
         fila = event.y // self.tam_celda
+
+        if self.modo_seleccionado == "Humano vs IA" and self.juego.turno_actual == "c1" and not self.juego_terminado:
+            self.ventana.after(500, self.realizar_movimiento_ia)
         
         if self.posicion_seleccionada is None:
             if self.juego.tablero[fila][col] == self.juego.turno_actual:
