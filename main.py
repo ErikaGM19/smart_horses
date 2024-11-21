@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from PIL import Image, ImageTk
 from game import Game
-from ai import AIPlayer
+from ai import AIPlayer, AIPlayer1, AIPlayer2
 from player import HumanPlayer
 from horse import Horse
 import random
@@ -256,37 +256,39 @@ class InterfazTableroGUI:
         self.dificultad_ia2.config(state="disabled")
 
          # Si es el turno de la IA, iniciar su movimiento
-        if isinstance(self.game.players[self.game.current_turn], AIPlayer):
+        if isinstance(self.game.players[self.game.current_turn], AIPlayer1) or isinstance(self.game.players[self.game.current_turn], AIPlayer2):
             self.realizar_movimiento_ia()
     
     def realizar_movimiento_ia(self):
         if not self.game:
             return
 
-
         # Obtener el movimiento de la IA y actualizar el juego
         current_player = self.game.players[self.game.current_turn]
         horse = self.game.board.get_horse(self.game.current_turn)
         print(f"AI ({horse.color}) está buscando un movimiento...")
-        move = current_player.get_move(self.game.board, horse)
-        print(f"AI ({horse.color}) ha elegido mover a: {move}")
-        if move:
-            self.game.update_state(horse, move)
-            self.actualizar_puntuaciones()
-            self.dibujar_tablero()
-        else:
-            self.mensaje_estado.config(text=f"La IA {self.game.current_turn} no tiene movimientos válidos.")
         
-        # Verificar si el juego ha terminado
-        if self.game.is_game_over():
-            self.finalizar_juego()
-        else:
-            self.game.switch_turn()
-            # Si el siguiente turno es de otra IA, continuar
-            if isinstance(self.game.players[self.game.current_turn], AIPlayer):
-                self.ventana.after(500, self.realizar_movimiento_ia)
+        if isinstance(current_player, (AIPlayer1, AIPlayer2)):
+            print(f"AI ({horse.color}) está buscando un movimiento...")
+            move = current_player.get_move(self.game.board, horse)
+            print(f"AI ({horse.color}) ha elegido mover a: {move}")
+            if move:
+                self.game.update_state(horse, move)
+                self.actualizar_puntuaciones()
+                self.dibujar_tablero()
             else:
-                self.mensaje_estado.config(text=f"Turno del jugador {self.game.current_turn}")
+                self.mensaje_estado.config(text=f"La IA {self.game.current_turn} no tiene movimientos válidos.")
+            
+            # Verificar si el juego ha terminado
+            if self.game.is_game_over():
+                self.finalizar_juego()
+            else:
+                self.game.switch_turn()
+                # Si el siguiente turno es de otra IA, continuar
+                if isinstance(self.game.players[self.game.current_turn], (AIPlayer1, AIPlayer2)):
+                    self.ventana.after(500, self.realizar_movimiento_ia)
+                else:
+                    self.mensaje_estado.config(text=f"Turno del jugador {self.game.current_turn}")
 
 
     def seleccionar_casilla(self, event):
@@ -299,6 +301,7 @@ class InterfazTableroGUI:
         if isinstance(self.game.players[self.game.current_turn], HumanPlayer):
             horse = self.game.board.get_horse(self.game.current_turn)
             valid_moves = horse.get_valid_moves(self.game.board)
+            print(f"Valid moves for {self.game.current_turn} horse: {valid_moves}")
             if (fila, col) in valid_moves:
                 self.game.update_state(horse, (fila, col))
                 self.actualizar_puntuaciones()

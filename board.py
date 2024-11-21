@@ -74,4 +74,4 @@ class Board:
         if not self.horses['white'].get_valid_moves(self):
             if not self.horses['black'].get_valid_moves(self):
                 return True
-        return True
+        return False

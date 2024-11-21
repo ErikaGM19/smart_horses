@@ -1,6 +1,6 @@
 from board import Board
 from player import HumanPlayer
-from ai import AIPlayer
+from ai import AIPlayer1, AIPlayer2
 
 
 class Game:
@@ -16,13 +16,14 @@ class Game:
             return {'white': HumanPlayer('white'), 
                     'black': HumanPlayer('black')}
         elif mode == 'Humano vs IA':
-            return {'white': AIPlayer('white', difficulty_ia1),
-                'black': HumanPlayer('black')}
+            return {'white': AIPlayer1('white', difficulty_ia1), 
+                    'black': HumanPlayer('black')}
         elif mode == 'IA 1 vs IA 2':
-            return {'white': AIPlayer('white', difficulty_ia1), 
-                    'black': AIPlayer('black', difficulty_ia2)}
+            return {'white': AIPlayer1('white', difficulty_ia1), 
+                    'black': AIPlayer2('black', difficulty_ia2)}
         else:
             return None
+
 
     def play_turn(self):
         player = self.players[self.current_turn]
