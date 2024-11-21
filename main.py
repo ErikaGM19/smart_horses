@@ -291,6 +291,7 @@ class InterfazTableroGUI:
                     self.mensaje_estado.config(text=f"Turno del jugador {self.game.current_turn}")
 
 
+
     def seleccionar_casilla(self, event):
         if not self.game:
             return
