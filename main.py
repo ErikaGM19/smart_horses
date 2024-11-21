@@ -247,7 +247,7 @@ class InterfazTableroGUI:
 
         self.puntos_caballo_negro.place(x=110, y=150)  
 
-    def modo_juego_seleccionado_callback(self, event):
+    def modo_juego_seleccionado_callback(self, event): #1
         modo = self.modo_juego.get()
         # Habilitar o deshabilitar campos de dificultad según el modo de juego seleccionado
         if modo == "Humano vs Humano":
@@ -311,6 +311,8 @@ class InterfazTableroGUI:
         elif self.modo_seleccionado == "IA 1 vs IA 2":
             # Iniciar el juego entre IAs
             self.ventana.after(500, self.realizar_movimiento_ia)
+        elif self.modo_seleccionado == "Humano vs Humano":
+            self.canvas.bind("<Button-1>", self.seleccionar_casilla)
 
 
     # def turno_ia_vs_ia(self):
@@ -455,6 +457,9 @@ class InterfazTableroGUI:
                 movimientos = self.obtener_movimientos_posibles(fila, col)
                 self.resaltar_movimientos_posibles(movimientos)
                 self.mensaje_estado.config(text=f"Caballo seleccionado. Seleccione destino.")
+
+
+    
         else:
             movimientos = self.obtener_movimientos_posibles(self.posicion_seleccionada[0], self.posicion_seleccionada[1])
             if (fila, col) in movimientos:
