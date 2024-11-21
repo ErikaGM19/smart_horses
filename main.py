@@ -188,7 +188,8 @@ class InterfazTableroGUI:
             activebackground='#007bb5',
             width=15,
             command=self.limpiar_tablero,
-            state=tk.DISABLED 
+            state=tk.DISABLED, 
+            
         )
         self.boton_limpiar.pack(side=tk.LEFT, padx=5)
 
@@ -283,6 +284,7 @@ class InterfazTableroGUI:
     def limpiar_tablero(self):
         self.canvas.delete("all")  
         self.juego = Main() 
+        self.juego_terminado = True 
         self.modo_juego_seleccionado.set("Seleccione")
         self.modo_juego.config(state=tk.NORMAL)
         self.boton_iniciar.config(state=tk.DISABLED)
@@ -294,6 +296,7 @@ class InterfazTableroGUI:
         self.mensaje_estado.config(text="")
         self.puntos_caballo_blanco.config(text="0")
         self.puntos_caballo_negro.config(text="0")
+        
     
   
     def iniciar_juego(self):
