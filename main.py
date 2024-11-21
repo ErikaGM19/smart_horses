@@ -90,6 +90,7 @@ class InterfazTableroGUI:
             
             messagebox.showinfo("Fin del Juego", f"El juego ha terminado.\n{ganador}")
             self.juego_terminado = True
+            self.boton_iniciar.config(state=tk.NORMAL)
 
 
         
@@ -287,7 +288,7 @@ class InterfazTableroGUI:
         self.juego_terminado = True 
         self.modo_juego_seleccionado.set("Seleccione")
         self.modo_juego.config(state=tk.NORMAL)
-        self.boton_iniciar.config(state=tk.DISABLED)
+        self.boton_iniciar.config(state=tk.NORMAL)
         self.boton_limpiar.config(state=tk.DISABLED)
         self.dificultad_ia1.set("")
         self.dificultad_ia1.config(state="disabled")
@@ -304,9 +305,17 @@ class InterfazTableroGUI:
         self.juego = Main()
         self.dibujar_tablero()
         self.boton_limpiar.config(state=tk.NORMAL)
+        self.boton_iniciar.config(state=tk.DISABLED)
         self.mensaje_estado.config(text="Tablero generado correctamente.")
         self.dificultad_ia1.config(state="disabled")
         self.dificultad_ia2.config(state="disabled")
+        self.puntos_caballo_blanco.config(text="0")
+        self.puntos_caballo_negro.config(text="0")
+        self.puntos_caballo_blanco_total = 0
+        self.puntos_caballo_negro_total = 0
+
+        self.juego_terminado = False
+        #self.limpiar_tablero
         self.modo_seleccionado = self.modo_juego.get()
         if self.modo_seleccionado == "Humano vs IA":
             if self.juego.turno_actual == "c1":  # Si la IA juega primero
@@ -366,6 +375,13 @@ class InterfazTableroGUI:
             self.dificultad_ia1.get() if self.juego.turno_actual == "c1" else self.dificultad_ia2.get()
         )
         profundidad = self.get_difficulty_depth(dificultad)
+
+        # Mostrar mensaje del movimiento
+        self.mensaje_estado.config(
+        text=f"{'Caballo Blanco' if self.juego.turno_actual == 'c1' else 'Caballo Negro'} (Nivel: {dificultad, profundidad}) está jugando..."
+        )
+        #self.mensaje_estado.config(text=f"Dificultad: {dificultad}, Profundidad del árbol: {profundidad}")
+
 
         # Crear nodo inicial y expandir árbol
         nodo_inicial = Nodo(
