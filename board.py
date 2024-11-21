@@ -9,10 +9,6 @@ class Board:
         self.place_elements()
 
     def place_elements(self):
-        """
-        Coloca los caballos, los puntos y los multiplicadores (x2) en posiciones aleatorias
-        sobre el tablero.
-        """
         positions = [(x, y) for x in range(self.size) for y in range(self.size)]
         random.shuffle(positions)
 
@@ -24,12 +20,13 @@ class Board:
         self.set_grid(white_pos, 'white_horse')
         self.set_grid(black_pos, 'black_horse')
 
-        # Colocamos los puntos (1 a 10)
+
+      # Colocamos los puntos (1 a 10)
         for value in range(1, 11):
             pos = positions.pop()
             self.set_grid(pos, f'{value}_point')
-        
-        # Colocamos los puntos x2
+
+        # Colocamos los multiplicadores x2
         for _ in range(4):
             pos = positions.pop()
             self.set_grid(pos, 'x2')
@@ -43,9 +40,6 @@ class Board:
         return self.grid[x][y]
 
     def move_horse(self, horse, new_position):
-        """
-        Mueve un caballo a una nueva posición y actualiza el tablero y los puntos si corresponde.
-        """
         current_pos = horse.position
         # Remover el caballo de la posición anterior
         self.set_grid(current_pos, None)
@@ -55,6 +49,7 @@ class Board:
 
         # Manejar la recolección de puntos o x2
         if cell_content and ('point' in cell_content or cell_content == 'x2'):
+            horse.collect_item(cell_content)
             self.set_grid(new_position, None)
 
         # Colocar el caballo en la nueva posición
@@ -69,20 +64,17 @@ class Board:
         return self.horses[opponent_color]
 
     def is_game_over(self):
-        """
-        Verifica si el juego ha terminado:
-        - Si no hay más puntos en el tablero (solo puntos, no x2).
-        """
-        # Verificar si ya no hay puntos en el tablero (solo puntos, no x2)
-        print("Comprobando si no hay más puntos en el tablero...")
+        # Verificar si ya no hay puntos en el tablero
         for x in range(self.size):
             for y in range(self.size):
                 cell = self.get_grid((x, y))
-                if 'point' in str(cell):  # Solo puntos, no x2
-                    print(f"Punto encontrado en ({x}, {y})")
+                if cell and ('point' in str(cell) or cell == 'x2'):
                     return False  # Aún hay puntos en el tablero
 
-        print("No quedan puntos en el tablero.")
+        # Verificar si ambos caballos no tienen movimientos válidos
+        for horse in self.horses.values():
+            if horse.get_valid_moves(self):
+                return False  # Aún hay movimientos válidos
 
-        # Si llegamos aquí, es porque no quedan puntos en el tablero
-        return True  # No hay más puntos, el juego termina
+        # Si no hay puntos y no hay movimientos válidos, termina el juego
+        return True
