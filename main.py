@@ -432,5 +432,8 @@ class InterfazTableroGUI:
         self.canvas.unbind("<Button-1>")
         if isinstance(self.game.players[self.game.current_turn], HumanPlayer):
             self.canvas.bind("<Button-1>", self.seleccionar_casilla)
+
+        points_left = any(cell and 'point' in cell for row in self.game.board.grid for cell in row)
+        print(f"dibujar_tablero: points_left={points_left}")    
 # Ejecutar la interfaz
 InterfazTableroGUI()
