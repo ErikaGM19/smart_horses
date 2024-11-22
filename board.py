@@ -7,6 +7,7 @@ class Board:
         self.grid = [[None for _ in range(self.size)] for _ in range(self.size)]
         self.horses = {}
         self.place_elements()
+        self.total_points = self.calculate_total_points()
 
     def place_elements(self):
         positions = [(x, y) for x in range(self.size) for y in range(self.size)]
@@ -30,6 +31,14 @@ class Board:
         for _ in range(4):
             pos = positions.pop()
             self.set_grid(pos, 'x2')
+
+    def calculate_total_points(self):
+        total = 0
+        for row in self.grid:
+            for cell in row:
+                if cell and 'point' in cell:
+                    total += int(cell.split('_')[0])
+        return total
 
     def set_grid(self, pos, value):
         x, y = pos
