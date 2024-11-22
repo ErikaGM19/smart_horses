@@ -74,15 +74,11 @@ class Board:
         - Si no hay más puntos en el tablero (solo puntos, no x2).
         """
         # Verificar si ya no hay puntos en el tablero (solo puntos, no x2)
-        print("Comprobando si no hay más puntos en el tablero...")
         for x in range(self.size):
             for y in range(self.size):
                 cell = self.get_grid((x, y))
                 if 'point' in str(cell):  # Solo puntos, no x2
-                    print(f"Punto encontrado en ({x}, {y})")
                     return False  # Aún hay puntos en el tablero
-
-        print("No quedan puntos en el tablero.")
 
         # Si llegamos aquí, es porque no quedan puntos en el tablero
         return True  # No hay más puntos, el juego termina

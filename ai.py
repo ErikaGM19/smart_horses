@@ -96,14 +96,35 @@ class AIPlayer(Player):
         points_positions = self.get_points_positions(board)
         min_distance = math.inf
 
-        # Priorizar los puntos cercanos
+        # Primero, evaluar los puntos cercanos alcanzables
+        closest_point_found = False
         for point in points_positions:
-            distance = self.calculate_distance(horse.position, point)
-            if distance < min_distance:
-                min_distance = distance
-                score += 5 / min_distance  # Priorizar las casillas con puntos cercanos
+            if point in horse.get_valid_moves(board):  # Solo considerar puntos alcanzables
+                distance = self.calculate_distance(horse.position, point)
+                if distance < min_distance:
+                    min_distance = distance
+                    score += 5 / min_distance  # Priorizar las casillas con puntos cercanos
+                    closest_point_found = True  # Hemos encontrado un punto cercano alcanzable
 
-        # Factor 4: Posición relativa al caballo oponente
+        # Si no se encontró un punto cercano alcanzable, evaluamos los puntos lejanos
+        if not closest_point_found:
+            for point in points_positions:
+                # Evaluar puntos lejanos aunque no sean alcanzables en este turno
+                distance = self.calculate_distance(horse.position, point)
+                if distance < min_distance:
+                    min_distance = distance
+                    # Si el punto es alcanzable a futuro, asigna una penalización pequeña
+                    score += 3 / distance  # Priorizar los puntos lejanos si no se encuentran puntos cercanos
+
+        # Factor 4: Buscar las casillas de puntos o `x2` más cercanas pero fuera del alcance inmediato
+        # Si la casilla está dentro del tablero pero no es alcanzable directamente, nos movemos hacia ella
+        for point in points_positions:
+            if point not in horse.get_valid_moves(board):  # Solo considerar puntos no alcanzables directamente
+                distance = self.calculate_distance(horse.position, point)
+                # Evaluar puntos lejanos de una forma más flexible, ya que están dentro del tablero
+                score += 3 / distance  # Penaliza los puntos lejanos, pero los evalúa con menor peso
+
+        # Factor 5: Posición relativa al caballo oponente
         opponent_horse = board.get_opponent_horse(horse.color)
         distance_to_opponent = abs(horse.position[0] - opponent_horse.position[0]) + abs(horse.position[1] - opponent_horse.position[1])
         score -= distance_to_opponent / 20  # Penalización por estar demasiado cerca
