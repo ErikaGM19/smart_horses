@@ -139,7 +139,7 @@ class Nodo:
         if not self.hijos:  # Nodo hoja
             utilidad_ia = self.puntos_acumulados_ia
             utilidad_oponente = self.puntos_acumulados_oponente
-            self.utilidad = utilidad_ia - utilidad_oponente
+            self.utilidad = (utilidad_ia - utilidad_oponente) * (1 + len(self.obtener_movimientos_validos()) * 0.1)
             return self.utilidad
 
         utilidades_hijos = [hijo.calcular_utilidad() for hijo in self.hijos]

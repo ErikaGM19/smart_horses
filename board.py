@@ -74,16 +74,16 @@ class Board:
         return self.horses[opponent_color]
 
     def is_game_over(self):
-        # Verificar si ya no hay puntos en el tablero
-        points_left = any(cell and 'point' in cell for row in self.grid for cell in row)
-        print(f"is_game_over: points_left={points_left}")  # Depuración
-        if not points_left:
-            return True  # Fin del juego porque ya no hay puntos
+        """
+        Verifica si el juego ha terminado:
+        - Si no hay más puntos en el tablero (solo puntos, no x2).
+        """
+        # Verificar si ya no hay puntos en el tablero (solo puntos, no x2)
+        for x in range(self.size):
+            for y in range(self.size):
+                cell = self.get_grid((x, y))
+                if 'point' in str(cell):  # Solo puntos, no x2
+                    return False  # Aún hay puntos en el tablero
 
-        # Verificar si ambos caballos no tienen movimientos válidos
-        if not any(horse.get_valid_moves(self) for horse in self.horses.values()):
-            print("is_game_over: Ningún caballo puede moverse.")
-            return True  # Fin del juego porque ninguna IA puede moverse
-
-        # El juego continúa
-        return False
+        # Si llegamos aquí, es porque no quedan puntos en el tablero
+        return True  # No hay más puntos, el juego termina
