@@ -8,6 +8,7 @@ class Main():
     def __init__(self):
         self.tablero = self.generar_tablero()
         self.turno_actual = "c1"  # Comienza el caballo blanco
+    
 
 
     def generar_tablero(self):
@@ -20,7 +21,26 @@ class Main():
         return matriz
 
 class InterfazTableroGUI:
+
+    knight_moves = [
+        (-2, -1), (-2, 1),  # Arriba
+        (-1, -2), (-1, 2),  # Izquierda/Derecha arriba
+        (1, -2), (1, 2),    # Izquierda/Derecha abajo
+        (2, -1), (2, 1)     # Abajo
+    ]
+
+    board_size = 8  # Tamaño del tablero
+
+    central_squares = [
+        (3, 3), (3, 4), 
+        (4, 3), (4, 4)  # Casillas centrales para la heurística
+    ]
+
+
+
     def __init__(self):
+        self.puntos_caballo_blanco_total = 0
+        self.puntos_caballo_negro_total = 0
         self.ventana = tk.Tk()
         self.ventana.title("Smart Horses")
         self.ventana.geometry('900x650')
@@ -32,7 +52,46 @@ class InterfazTableroGUI:
         self.juego = None
         self.casillas_resaltadas = []  # Para almacenar las casillas disponibles
         self.posicion_seleccionada = None  # Para almacenar la posición del caballo seleccionado
+        self.juego_terminado = False
+        self.modo_seleccionado = None  # Inicializar el modo seleccionado
         self.ventana.mainloop()
+        
+
+    def obtener_movimientos_posibles_para_caballo(self, caballo):
+        for i in range(8):
+            for j in range(8):
+                if self.juego.tablero[i][j] == caballo:
+                    movimientos = self.obtener_movimientos_posibles(i, j)
+                    if movimientos:
+                        return movimientos
+        return []
+
+
+    def verificar_fin_juego(self):
+        # Obtener movimientos posibles para ambos caballos
+        movimientos_c1 = self.obtener_movimientos_posibles_para_caballo("c1")
+        movimientos_c2 = self.obtener_movimientos_posibles_para_caballo("c2")
+        
+        # Verificar si quedan puntos en el tablero
+        puntos_restantes = any(
+            isinstance(self.juego.tablero[i][j], int) and self.juego.tablero[i][j] > 0
+            for i in range(8)
+            for j in range(8)
+        )
+        
+        if (not movimientos_c1 and not movimientos_c2) or not puntos_restantes:
+            if self.puntos_caballo_blanco_total > self.puntos_caballo_negro_total:
+                ganador = "¡Caballo Blanco gana!"
+            elif self.puntos_caballo_blanco_total < self.puntos_caballo_negro_total:
+                ganador = "¡Caballo Negro gana!"
+            else:
+                ganador = "¡Empate!"
+            
+            messagebox.showinfo("Fin del Juego", f"El juego ha terminado.\n{ganador}")
+            self.juego_terminado = True
+            self.boton_iniciar.config(state=tk.NORMAL)
+
+
         
     def cargar_imagenes(self):
         # Cargar imágenes y guardarlas en un diccionario
@@ -86,6 +145,7 @@ class InterfazTableroGUI:
         self.modo_juego.pack()
         self.modo_juego.bind("<<ComboboxSelected>>", self.modo_juego_seleccionado_callback)
 
+ 
         # ComboBox para la dificultad de IA1
         self.label_dificultad_ia1 = tk.Label(
             frame_modo_juego,
@@ -128,7 +188,8 @@ class InterfazTableroGUI:
             activebackground='#007bb5',
             width=15,
             command=self.limpiar_tablero,
-            state=tk.DISABLED 
+            state=tk.DISABLED, 
+            
         )
         self.boton_limpiar.pack(side=tk.LEFT, padx=5)
 
@@ -187,7 +248,7 @@ class InterfazTableroGUI:
 
         self.puntos_caballo_negro.place(x=110, y=150)  
 
-    def modo_juego_seleccionado_callback(self, event):
+    def modo_juego_seleccionado_callback(self, event): #1
         modo = self.modo_juego.get()
         # Habilitar o deshabilitar campos de dificultad según el modo de juego seleccionado
         if modo == "Humano vs Humano":
@@ -223,9 +284,10 @@ class InterfazTableroGUI:
     def limpiar_tablero(self):
         self.canvas.delete("all")  
         self.juego = Main() 
+        self.juego_terminado = True 
         self.modo_juego_seleccionado.set("Seleccione")
         self.modo_juego.config(state=tk.NORMAL)
-        self.boton_iniciar.config(state=tk.DISABLED)
+        self.boton_iniciar.config(state=tk.NORMAL)
         self.boton_limpiar.config(state=tk.DISABLED)
         self.dificultad_ia1.set("")
         self.dificultad_ia1.config(state="disabled")
@@ -234,28 +296,52 @@ class InterfazTableroGUI:
         self.mensaje_estado.config(text="")
         self.puntos_caballo_blanco.config(text="0")
         self.puntos_caballo_negro.config(text="0")
+        
     
   
     def iniciar_juego(self):
         self.cargar_imagenes()
-        self.juego = Main()  
+        self.juego = Main()
         self.dibujar_tablero()
         self.boton_limpiar.config(state=tk.NORMAL)
+        self.boton_iniciar.config(state=tk.DISABLED)
         self.mensaje_estado.config(text="Tablero generado correctamente.")
         self.dificultad_ia1.config(state="disabled")
         self.dificultad_ia2.config(state="disabled")
+        self.puntos_caballo_blanco.config(text="0")
+        self.puntos_caballo_negro.config(text="0")
+        self.puntos_caballo_blanco_total = 0
+        self.puntos_caballo_negro_total = 0
+
+        self.juego_terminado = False
+        #self.limpiar_tablero
+        self.modo_seleccionado = self.modo_juego.get()
+        if self.modo_seleccionado == "Humano vs IA":
+            if self.juego.turno_actual == "c1":  # Si la IA juega primero
+                self.ventana.after(500, self.realizar_movimiento_ia)
+        elif self.modo_seleccionado == "IA 1 vs IA 2":
+            # Iniciar el juego entre IAs
+            self.ventana.after(500, self.realizar_movimiento_ia)
+        elif self.modo_seleccionado == "Humano vs Humano":
+            self.canvas.bind("<Button-1>", self.seleccionar_casilla)
+
+
+    # def turno_ia_vs_ia(self):
+    #     if not self.juego_terminado:
+    #         self.realizar_movimiento_ia()
+    #         self.ventana.after(1000, self.turno_ia_vs_ia)
 
     def obtener_movimientos_posibles(self, fila, columna):
         movimientos = []
         # Todos los posibles movimientos del caballo
-        patrones = [
+        knight_moves = [
             (-2, -1), (-2, 1),  # Arriba
             (-1, -2), (-1, 2),  # Izquierda/Derecha arriba
             (1, -2), (1, 2),    # Izquierda/Derecha abajo
             (2, -1), (2, 1)     # Abajo
         ]
         
-        for df, dc in patrones:
+        for df, dc in knight_moves:
             nueva_fila = fila + df
             nueva_col = columna + dc
             if 0 <= nueva_fila < 8 and 0 <= nueva_col < 8:
@@ -289,39 +375,77 @@ class InterfazTableroGUI:
     def seleccionar_casilla(self, event):
         col = event.x // self.tam_celda
         fila = event.y // self.tam_celda
-        
-        # Si no hay una pieza seleccionada
+
+        if self.juego_terminado:
+            return  # No hacer nada si el juego ha terminado
+
+        if self.modo_seleccionado == "Humano vs IA" and self.juego.turno_actual == "c1":
+            # Es el turno de la IA, ignorar clics
+            return
+
         if self.posicion_seleccionada is None:
-            # Verifica si la casilla contiene un caballo y si es su turno
             if self.juego.tablero[fila][col] == self.juego.turno_actual:
                 self.posicion_seleccionada = (fila, col)
                 movimientos = self.obtener_movimientos_posibles(fila, col)
                 self.resaltar_movimientos_posibles(movimientos)
                 self.mensaje_estado.config(text=f"Caballo seleccionado. Seleccione destino.")
+
+
+    
         else:
-            # Verifica si la casilla destino es un movimiento válido
-            movimientos = self.obtener_movimientos_posibles(self.posicion_seleccionada[0], 
-                                                          self.posicion_seleccionada[1])
+            movimientos = self.obtener_movimientos_posibles(self.posicion_seleccionada[0], self.posicion_seleccionada[1])
             if (fila, col) in movimientos:
+                # Obtener el valor de la casilla destino antes de mover
+                valor_casilla = self.juego.tablero[fila][col]
                 # Realiza el movimiento
                 fila_origen, col_origen = self.posicion_seleccionada
                 pieza = self.juego.tablero[fila_origen][col_origen]
                 self.juego.tablero[fila_origen][col_origen] = 0
                 self.juego.tablero[fila][col] = pieza
-                
+
+                # Actualizar puntos
+                self.actualizar_puntos(pieza, valor_casilla)
+
                 # Cambiar turno
                 self.juego.turno_actual = "c2" if self.juego.turno_actual == "c1" else "c1"
-                
+
                 # Actualiza el tablero
                 self.dibujar_tablero()
                 self.mensaje_estado.config(text=f"Turno del {'caballo negro' if self.juego.turno_actual == 'c2' else 'caballo blanco'}")
+
+                # Verificar fin del juego
+                self.verificar_fin_juego()
+
+                # Si es el turno de la IA, realizar movimiento automáticamente
+                if self.modo_seleccionado == "Humano vs IA" and self.juego.turno_actual == "c1" and not self.juego_terminado:
+                    self.ventana.after(500, self.realizar_movimiento_ia)
             else:
                 self.mensaje_estado.config(text="Movimiento inválido. Intente nuevamente.")
-            
-            # Limpia la selección y los resaltados
+
             self.posicion_seleccionada = None
             self.resaltar_movimientos_posibles([])
 
+
+
+    def actualizar_puntos(self, pieza, valor_casilla):
+        if isinstance(valor_casilla, int):
+            puntos = valor_casilla
+            if pieza == "c1":
+                self.puntos_caballo_blanco_total += puntos
+                self.puntos_caballo_blanco.config(text=str(self.puntos_caballo_blanco_total))
+            else:
+                self.puntos_caballo_negro_total += puntos
+                self.puntos_caballo_negro.config(text=str(self.puntos_caballo_negro_total))
+        elif valor_casilla == "x2":
+            if pieza == "c1":
+                self.puntos_caballo_blanco_total *= 2
+                self.puntos_caballo_blanco.config(text=str(self.puntos_caballo_blanco_total))
+            else:
+                self.puntos_caballo_negro_total *= 2
+                self.puntos_caballo_negro.config(text=str(self.puntos_caballo_negro_total))
+
+
+    
 
     def dibujar_tablero(self):
         self.canvas.delete("all")
@@ -332,9 +456,9 @@ class InterfazTableroGUI:
 
                 self.canvas.create_rectangle(x1, y1, x2, y2, outline="black", width=1)
 
-                if valor == 0:
+                if valor == 0 or valor == '0':
                     imagen = self.imagenes["0"]
-                elif valor in range(1, 11):
+                elif str(valor) in map(str, range(1, 11)):
                     imagen = self.imagenes[str(valor)]
                 elif valor == "x2":
                     imagen = self.imagenes["x2"]
@@ -345,8 +469,57 @@ class InterfazTableroGUI:
 
                 self.canvas.create_image(x1, y1, image=imagen, anchor="nw")
         
-        # Vincular el evento de clic
-        self.canvas.bind("<Button-1>", self.seleccionar_casilla)
+        # Vincular o desvincular el evento de clic según el modo de juego
+        if self.modo_seleccionado in ["Humano vs Humano", "Humano vs IA"]:
+            self.canvas.bind("<Button-1>", self.seleccionar_casilla)
+        else:
+            self.canvas.unbind("<Button-1>")
+
+    @staticmethod
+    def count_valid_moves2(position, board_act):
+        positionMov = 0
+        for dx, dy in InterfazTableroGUI.knight_moves:  # Ahora usa la variable de clase
+            new_row = position[0] + dx
+            new_col = position[1] + dy
+            if 0 <= new_row < InterfazTableroGUI.board_size and 0 <= new_col < InterfazTableroGUI.board_size and board_act[new_row][new_col] == 0:
+                positionMov += 1         
+        return positionMov
+
+    @staticmethod
+    def calcular_utilidad(nodo):
+        if not nodo.hijos:  # Leaf node
+            # Calculate utility based on the game state
+            # For example, you can evaluate the difference in available moves
+            max_moves = len(InterfazTableroGUI.count_valid_moves(nodo.estado, nodo.tablero))
+            min_moves = len(InterfazTableroGUI.count_valid_moves(nodo.estadoContrincante, nodo.tablero))
+
+            nodo.utilidad = max_moves - min_moves
+            return nodo.utilidad
+
+        # Recursive utility calculation
+        utilidades_hijos = [InterfazTableroGUI.calcular_utilidad(hijo) for hijo in nodo.hijos]
+
+        if nodo.minmax == "MAX":
+            nodo.utilidad = max(utilidades_hijos)
+        else:
+            nodo.utilidad = min(utilidades_hijos)
+
+        return nodo.utilidad
+
+        
+
+    @staticmethod
+    def count_valid_moves(position, board_act):
+        positionMov = []
+        for dx, dy in InterfazTableroGUI.knight_moves:
+            new_row = position[0] + dx
+            new_col = position[1] + dy
+            if 0 <= new_row < InterfazTableroGUI.board_size and 0 <= new_col < InterfazTableroGUI.board_size:
+                if board_act[new_row][new_col] == 0:
+                    positionMov.append((new_row, new_col))
+        return positionMov
+
+
 
 # Ejecutar la interfaz
 InterfazTableroGUI()
