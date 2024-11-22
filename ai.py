@@ -24,6 +24,11 @@ class AIPlayer(Player):
             return eval_score, None
 
         valid_moves = horse.get_valid_moves(board)
+        # Verificar si hay una ficha directamente alcanzable
+        immediate_collect = [(move, board.get_grid(move)) for move in valid_moves if 'point' in str(board.get_grid(move))]
+        if immediate_collect:
+            best_move = max(immediate_collect, key=lambda x: int(x[1].split('_')[0]))[0]
+            return 1000, best_move  # Priorizamos las fichas disponibles
         if not valid_moves:
             eval_score = self.evaluate(board)
             return eval_score, None
@@ -91,6 +96,8 @@ class AIPlayer(Player):
         # Factor 3: Número de movimientos válidos
         num_valid_moves = len(horse.get_valid_moves(board))
         score += num_valid_moves * 5  # Favorecer tener más opciones de movimiento
+        reachable_points = [move for move in horse.get_valid_moves(board) if 'point' in str(board.get_grid(move))]
+        score += len(reachable_points) * 50  # Fuerte incentivo a recoger puntos alcanzables directamente
 
         # Factor 4: Proximidad al oponente
         opponent_horse = board.get_opponent_horse(horse.color)
