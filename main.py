@@ -275,6 +275,7 @@ class InterfazTableroGUI:
                 self.mensaje_estado.config(text=f"La IA {self.game.current_turn} no tiene movimientos válidos.")
             
             if self.game.is_game_over():
+                self.dibujar_tablero()
                 self.finalizar_juego()
             else:
                 self.game.switch_turn()
@@ -307,6 +308,7 @@ class InterfazTableroGUI:
                 tags='resaltado'
             )
             self.casillas_resaltadas.append(resaltado)
+    
     def seleccionar_casilla(self, event):
         if not self.game:
             return
@@ -371,7 +373,9 @@ class InterfazTableroGUI:
 
     def finalizar_juego(self):
         winner_message = self.game.declare_winner()
+        print(f"Finalizando juego: {winner_message}")
         self.mensaje_estado.config(text=winner_message)
+        self.ventana.update_idletasks()
         self.canvas.unbind("<Button-1>")
         self.boton_iniciar.config(state=tk.NORMAL)
         self.modo_juego.config(state="readonly")

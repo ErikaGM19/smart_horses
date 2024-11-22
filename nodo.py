@@ -153,8 +153,10 @@ class Nodo:
 
     def calcular_mejor_movimiento(self, depth):
         def minimax(nodo, profundidad, maximizador, alpha, beta):
+            print(f"Minimax: Profundidad {profundidad}, Maximizador: {maximizador}")
             if profundidad == 0 or not nodo.hijos:
                 utilidad = nodo.calcular_utilidad()
+                print(f"Minimax: Nodo hoja con utilidad {utilidad}")
                 return utilidad, nodo.estado
 
             if maximizador:
@@ -168,6 +170,7 @@ class Nodo:
                     alpha = max(alpha, eval)
                     if beta <= alpha:
                         break
+                print(f"Minimax: Maximizador retorna {max_eval} para movimiento {mejor_movimiento}")
                 return max_eval, mejor_movimiento
             else:
                 min_eval = float('inf')
@@ -180,9 +183,11 @@ class Nodo:
                     beta = min(beta, eval)
                     if beta <= alpha:
                         break
+                print(f"Minimax: Minimizador retorna {min_eval} para movimiento {mejor_movimiento}")
                 return min_eval, mejor_movimiento
 
         # Expandir el árbol antes de calcular Minimax
         self.expandir_arbol(depth)
         _, mejor_movimiento = minimax(self, depth, True, -float('inf'), float('inf'))
+        print(f"Mejor movimiento calculado: {mejor_movimiento}")
         return mejor_movimiento

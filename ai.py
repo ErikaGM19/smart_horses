@@ -13,24 +13,61 @@ class AIPlayer(Player):
         return mapping.get(difficulty, 2)
     
     def get_move(self, board, horse):
-        # Crear nodo raíz
-        opponent_horse = board.get_opponent_horse(self.color)
-        nodo_raiz = Nodo(
-            estado=horse.position,
-            utilidad=None,
-            minmax="MAX",
-            tablero=copy.deepcopy(board.grid),  # Copia profunda del tablero
-            estadoContrincante=opponent_horse.position,
-            profundidad=0,
-            puntos_acumulados_ia=horse.points,
-            puntos_acumulados_oponente=opponent_horse.points,
-            visitados_ia=horse.visited_positions.copy(),
-            visitados_oponente=opponent_horse.visited_positions.copy()
-        )
+        valid_moves = horse.get_valid_moves(board)
+        if not valid_moves:
+            return None
+        best_score = -math.inf
+        best_move = None
+        for move in valid_moves:
+            board_copy = copy.deepcopy(board)
+            horse_copy = copy.deepcopy(horse)
+            board_copy.move_horse(horse_copy, move)
+            score = self.evaluate(board_copy)
+            if score > best_score:
+                best_score = score
+                best_move = move
+        return best_move
 
-        # Calcular el mejor movimiento usando minimax
-        mejor_movimiento = nodo_raiz.calcular_mejor_movimiento(self.depth)
-        return mejor_movimiento
+    def minimax(self, board, horse, depth, maximizing_player, alpha, beta):
+        if depth == 0 or board.is_game_over():
+            return self.evaluate(board), None
+
+        valid_moves = horse.get_valid_moves(board)
+        if not valid_moves:
+            return self.evaluate(board), None
+
+        best_move = None
+
+        if maximizing_player:
+            max_eval = -math.inf
+            for move in valid_moves:
+                board_copy = copy.deepcopy(board)
+                horse_copy = copy.deepcopy(horse)
+                board_copy.move_horse(horse_copy, move)
+                eval, _ = self.minimax(board_copy, horse_copy, depth - 1, False, alpha, beta)
+                if eval > max_eval:
+                    max_eval = eval
+                    best_move = move
+                alpha = max(alpha, eval)
+                if beta <= alpha:
+                    break
+            return max_eval, best_move
+        else:
+            min_eval = math.inf
+            opponent_horse = board.get_opponent_horse(self.color)
+            opponent_moves = opponent_horse.get_valid_moves(board)
+            for move in opponent_moves:
+                board_copy = copy.deepcopy(board)
+                horse_copy = copy.deepcopy(opponent_horse)
+                board_copy.move_horse(horse_copy, move)
+                eval, _ = self.minimax(board_copy, horse_copy, depth - 1, True, alpha, beta)
+                if eval < min_eval:
+                    min_eval = eval
+                    best_move = move
+                beta = min(beta, eval)
+                if beta <= alpha:
+                    break
+            return min_eval, best_move
 
     def evaluate(self, board):
         score = 0
@@ -44,6 +81,7 @@ class AIPlayer(Player):
         score -= self.evaluate_horse(board, opponent_horse)
 
         return score
+        
     def evaluate_horse(self, board, horse):
         score = 0
         cell_content = board.get_grid(horse.position)
