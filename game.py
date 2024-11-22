@@ -1,73 +1,51 @@
+# game.py
 from board import Board
 from player import HumanPlayer
 from ai import AIPlayer1, AIPlayer2
 
-
 class Game:
     def __init__(self, mode, difficulty_ia1=None, difficulty_ia2=None):
         self.board = Board()
-        self.players = self.create_players(mode, difficulty_ia1, difficulty_ia2)
-        self.current_turn = 'white' # El caballo blanco inicia
-        self.scores = {'white': 0, 'black': 0}
-        self.game_over = False
-    
-    def create_players(self, mode, difficulty_ia1, difficulty_ia2):
-        if mode == 'Humano vs Humano':
-            return {'white': HumanPlayer('white'), 
-                    'black': HumanPlayer('black')}
-        elif mode == 'Humano vs IA':
-            return {'white': AIPlayer1('white', difficulty_ia1), 
-                    'black': HumanPlayer('black')}
-        elif mode == 'IA 1 vs IA 2':
-            return {'white': AIPlayer1('white', difficulty_ia1), 
-                    'black': AIPlayer2('black', difficulty_ia2)}
+        self.players = {}
+
+        if mode == "Humano vs Humano":
+            self.current_turn = 'white'  # El blanco inicia
+            self.players['white'] = HumanPlayer('white')
+            self.players['black'] = HumanPlayer('black')
+        elif mode == "Humano vs IA":
+            self.current_turn = 'white'  # La IA inicia
+            self.players['white'] = AIPlayer1('white', difficulty_ia1)
+            self.players['black'] = HumanPlayer('black')
+        elif mode == "IA 1 vs IA 2":
+            self.current_turn = 'white'  # La IA 1 inicia
+            self.players['white'] = AIPlayer1('white', difficulty_ia1)
+            self.players['black'] = AIPlayer2('black', difficulty_ia2)
         else:
-            return None
-
-
-    def play_turn(self):
-        player = self.players[self.current_turn]
-        horse = self.board.get_horse(self.current_turn)
-        move = player.get_move(self.board, horse)
-        self.update_state(horse, move)
-        self.switch_turn()
-
-    def update_state(self, horse, new_position):
-        # Actualiza el tablero y aplica los puntos si corresponde
-        current_cell = self.board.get_grid(new_position)
-        # Actualizar puntuación si recoge puntos
-        if 'point' in str(current_cell):
-            point_value = int(current_cell.split('_')[0])
-            if horse.has_x2:
-                point_value *= 2
-                horse.has_x2 = 0  # Consumimos el x2
-            self.scores[horse.color] += point_value
-            self.board.set_grid(new_position, None)
-        elif current_cell == 'x2' and not horse.has_x2:
-            horse.has_x2 = 1
-            self.board.set_grid(new_position, None)
-        # Actualizar posición del caballo
-        self.board.set_grid(horse.position, None)
-        horse.move_to(new_position)
-        self.board.set_grid(new_position, f'{horse.color}_horse')
+            raise ValueError("Modo de juego no soportado")
 
     def switch_turn(self):
         self.current_turn = 'black' if self.current_turn == 'white' else 'white'
 
+    def update_state(self, horse, new_position):
+        self.board.move_horse(horse, new_position)
+
     def is_game_over(self):
-        #Si se acaba el juego
+        return self.board.is_game_over()
+
+    def declare_winner(self):
+        scores = self.get_scores()
+        if scores['white'] > scores['black']:
+            return "¡Caballo Blanco gana!"
+        elif scores['white'] < scores['black']:
+            return "¡Caballo Negro gana!"
+        else:
+            return "¡Empate!"
+
+    def is_game_over(self):
         return self.board.is_game_over()
 
     def get_scores(self):
-        return self.scores
-
-    def declare_winner(self):
-        #Devuelve el ganador
-        white_score = self.scores['white']
-        black_score = self.scores['black']
-        if white_score > black_score:
-            return f"El ganador es el caballo blanco con {white_score} puntos."
-        elif black_score > white_score:
-            return f"El ganador es el caballo negro con {black_score} puntos."
-        else:
-            return "Es un empate."
+        return {
+            'white': self.board.get_horse('white').points,
+            'black': self.board.get_horse('black').points
+        }

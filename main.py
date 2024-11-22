@@ -1,8 +1,9 @@
+# main.py
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from PIL import Image, ImageTk
 from game import Game
-from ai import AIPlayer, AIPlayer1, AIPlayer2
+from ai import AIPlayer1, AIPlayer2
 from player import HumanPlayer
 from horse import Horse
 import random
@@ -31,7 +32,6 @@ class InterfazTableroGUI:
         self.imagenes["x2"] = ImageTk.PhotoImage(Image.open("images/x2.png").resize((self.tam_celda, self.tam_celda)))
         self.imagenes["white_horse"] = ImageTk.PhotoImage(Image.open("images/c1.png").resize((self.tam_celda, self.tam_celda)))
         self.imagenes["black_horse"] = ImageTk.PhotoImage(Image.open("images/c2.png").resize((self.tam_celda, self.tam_celda)))
-       
 
     def crear_frames(self):
         self.content_frame = tk.Frame(self.ventana, bg='#82dad3')
@@ -182,20 +182,17 @@ class InterfazTableroGUI:
         # Habilitar o deshabilitar campos de dificultad según el modo de juego seleccionado
         if modo == "Humano vs Humano":
             self.boton_limpiar.config(state=tk.DISABLED)
-            #self.modo_juego.config(state="disabled")
             self.dificultad_ia1.config(state="disabled")
             self.dificultad_ia2.config(state="disabled")
             self.boton_iniciar.config(state=tk.NORMAL)
         elif modo == "Humano vs IA":
             self.boton_limpiar.config(state=tk.DISABLED)
-            #self.modo_juego.config(state="disabled")
             self.dificultad_ia1.config(state="readonly")
             self.dificultad_ia2.config(state="disabled")
             self.dificultad_ia1.bind("<<ComboboxSelected>>", self.verificar_seleccion)
             self.boton_iniciar.config(state=tk.DISABLED)
         elif modo == "IA 1 vs IA 2":
             self.boton_limpiar.config(state=tk.DISABLED)
-            #self.modo_juego.config(state="disabled")
             self.dificultad_ia1.config(state="readonly")
             self.dificultad_ia2.config(state="readonly")
             self.dificultad_ia1.bind("<<ComboboxSelected>>", self.verificar_seleccion)
@@ -225,9 +222,7 @@ class InterfazTableroGUI:
         self.puntos_caballo_blanco.config(text="0")
         self.puntos_caballo_negro.config(text="0")
     
-  
     def iniciar_juego(self):
-
         # Obtener el modo y las dificultades
         modo = self.modo_juego.get()
         dificultad_ia1 = self.dificultad_ia1.get()
@@ -247,95 +242,166 @@ class InterfazTableroGUI:
         if not self.imagenes:
             self.cargar_imagenes()
 
-         # Dibujar el tablero inicial
+        # Dibujar el tablero inicial
         self.dibujar_tablero()
         self.boton_limpiar.config(state=tk.NORMAL)
         self.mensaje_estado.config(text="Tablero generado correctamente.")
-         # Deshabilitar opciones mientras el juego está en curso
+        # Deshabilitar opciones mientras el juego está en curso
         self.dificultad_ia1.config(state="disabled")
         self.dificultad_ia2.config(state="disabled")
+        self.modo_juego.config(state="disabled")
+        self.boton_iniciar.config(state="disabled")
 
-         # Si es el turno de la IA, iniciar su movimiento
-        if isinstance(self.game.players[self.game.current_turn], AIPlayer1) or isinstance(self.game.players[self.game.current_turn], AIPlayer2):
-            self.realizar_movimiento_ia()
-    
+        # Si es el turno de la IA, iniciar su movimiento
+        if isinstance(self.game.players[self.game.current_turn], (AIPlayer1, AIPlayer2)):
+            self.ventana.after(500, self.realizar_movimiento_ia)
+        else:
+            self.mensaje_estado.config(text=f"Turno del jugador {self.game.current_turn}")
+
     def realizar_movimiento_ia(self):
         if not self.game:
             return
 
-        # Obtener el movimiento de la IA y actualizar el juego
-        current_player = self.game.players[self.game.current_turn]
-        horse = self.game.board.get_horse(self.game.current_turn)
-        print(f"AI ({horse.color}) está buscando un movimiento...")
+        try:
+            current_player = self.game.players[self.game.current_turn]
+            horse = self.game.board.get_horse(self.game.current_turn)
         
-        if isinstance(current_player, (AIPlayer1, AIPlayer2)):
-            print(f"AI ({horse.color}) está buscando un movimiento...")
-            move = current_player.get_move(self.game.board, horse)
-            print(f"AI ({horse.color}) ha elegido mover a: {move}")
-            if move:
-                self.game.update_state(horse, move)
-                self.actualizar_puntuaciones()
-                self.dibujar_tablero()
-            else:
-                self.mensaje_estado.config(text=f"La IA {self.game.current_turn} no tiene movimientos válidos.")
-            
-            # Verificar si el juego ha terminado
-            if self.game.is_game_over():
-                self.finalizar_juego()
-            else:
+            if isinstance(current_player, (AIPlayer1, AIPlayer2)):
+                print(f"AI ({horse.color}) está buscando un movimiento...")
+                move = current_player.get_move(self.game.board, horse)
+                print(f"AI ({horse.color}) ha elegido mover a: {move}")
+                if move:
+                    self.game.update_state(horse, move)
+                    self.actualizar_puntuaciones()
+                    self.dibujar_tablero()
+                else:
+                    self.mensaje_estado.config(text=f"La IA {self.game.current_turn} no tiene movimientos válidos.")
+                
+                if self.game.is_game_over():
+                    self.finalizar_juego()
+                    return
+
+                
                 self.game.switch_turn()
-                # Si el siguiente turno es de otra IA, continuar
+                self.dibujar_tablero()  # Actualizar la interfaz y re-vincular el evento de clic
+                
                 if isinstance(self.game.players[self.game.current_turn], (AIPlayer1, AIPlayer2)):
-                    self.ventana.after(500, self.realizar_movimiento_ia)
+                     self.ventana.after(500, self.realizar_movimiento_ia)
                 else:
                     self.mensaje_estado.config(text=f"Turno del jugador {self.game.current_turn}")
+            else:
+                self.mensaje_estado.config(text=f"Turno del jugador {self.game.current_turn}")
+        except Exception as e:
+            print(f"Error durante el movimiento de la IA: {e}")
+            self.mensaje_estado.config(text=f"Error durante el movimiento de la IA: {e}")
 
+    def resaltar_movimientos_posibles(self, movimientos):
+        # Limpia resaltados anteriores
+        for casilla in self.casillas_resaltadas:
+            self.canvas.delete(casilla)
+        self.casillas_resaltadas.clear()
 
+        # Resalta las nuevas casillas disponibles
+        for fila, col in movimientos:
+            x1 = col * self.tam_celda
+            y1 = fila * self.tam_celda
+            x2 = x1 + self.tam_celda
+            y2 = y1 + self.tam_celda
+            # Crear un rectángulo semitransparente verde
+            resaltado = self.canvas.create_rectangle(
+                x1, y1, x2, y2,
+                fill='#00FF00',
+                stipple='gray50',
+                tags='resaltado'
+            )
+            self.casillas_resaltadas.append(resaltado)
+    
     def seleccionar_casilla(self, event):
         if not self.game:
             return
 
         col = event.x // self.tam_celda
         fila = event.y // self.tam_celda
-        
-        if isinstance(self.game.players[self.game.current_turn], HumanPlayer):
+
+        if self.posicion_seleccionada is None:
+            # Primera selección: seleccionar el caballo
+            horse = self.game.board.get_horse(self.game.current_turn)
+            if (fila, col) == horse.position:
+                self.posicion_seleccionada = (fila, col)
+                valid_moves = horse.get_valid_moves(self.game.board)
+                self.resaltar_movimientos_posibles(valid_moves)
+                self.mensaje_estado.config(text="Seleccione el destino.")
+            else:
+                self.mensaje_estado.config(text="Seleccione su caballo para mover.")
+        else:
+            # Segunda selección: seleccionar el destino
             horse = self.game.board.get_horse(self.game.current_turn)
             valid_moves = horse.get_valid_moves(self.game.board)
-            print(f"Valid moves for {self.game.current_turn} horse: {valid_moves}")
             if (fila, col) in valid_moves:
                 self.game.update_state(horse, (fila, col))
                 self.actualizar_puntuaciones()
-                self.dibujar_tablero()
-
+                self.resaltar_movimientos_posibles([])  # Limpiar resaltados
+                self.posicion_seleccionada = None
                 if self.game.is_game_over():
+                    self.dibujar_tablero()
                     self.finalizar_juego()
                 else:
                     self.game.switch_turn()
-                    if isinstance(self.game.players[self.game.current_turn], AIPlayer):
+                    self.dibujar_tablero()
+                    if isinstance(self.game.players[self.game.current_turn], (AIPlayer1, AIPlayer2)):
                         self.ventana.after(500, self.realizar_movimiento_ia)
                     else:
                         self.mensaje_estado.config(text=f"Turno del jugador {self.game.current_turn}")
             else:
-                self.mensaje_estado.config(text="Movimiento inválido. Intente nuevamente.")
-    
+                self.mensaje_estado.config(text="Movimiento inválido. Seleccione un destino válido.")
+                # Mantener las casillas resaltadas
+
+    def resaltar_movimientos_posibles(self, movimientos):
+        # Limpia resaltados anteriores
+        for casilla in self.casillas_resaltadas:
+            self.canvas.delete(casilla)
+        self.casillas_resaltadas.clear()
+
+        # Resalta las nuevas casillas disponibles
+        for fila, col in movimientos:
+            x1 = col * self.tam_celda
+            y1 = fila * self.tam_celda
+            x2 = x1 + self.tam_celda
+            y2 = y1 + self.tam_celda
+            # Crear un rectángulo semitransparente verde
+            resaltado = self.canvas.create_rectangle(
+                x1, y1, x2, y2,
+                fill='#00FF00',
+                stipple='gray50',
+                tags='resaltado'
+            )
+            self.casillas_resaltadas.append(resaltado)
+
+
     def finalizar_juego(self):
         winner_message = self.game.declare_winner()
+        print(f"Finalizando juego: {winner_message}")
         self.mensaje_estado.config(text=winner_message)
+        self.ventana.update_idletasks()
         self.canvas.unbind("<Button-1>")
-
+        self.boton_iniciar.config(state=tk.NORMAL)
+        self.modo_juego.config(state="readonly")
+        messagebox.showinfo("Juego Terminado", winner_message)
 
     def actualizar_puntuaciones(self):
         # Actualizar las etiquetas de puntuaciones
         scores = self.game.get_scores()
         self.puntos_caballo_blanco.config(text=str(scores['white']))
         self.puntos_caballo_negro.config(text=str(scores['black']))
-
-        
-
-
+    
     def dibujar_tablero(self):
         if not self.game or not self.game.players:
             return
+
+        # Limpiar resaltados anteriores
+        for casilla in self.casillas_resaltadas:
+            self.canvas.delete(casilla)
+        self.casillas_resaltadas.clear()
 
         self.canvas.delete("all")
         for x in range(self.game.board.size):
@@ -349,8 +415,7 @@ class InterfazTableroGUI:
 
                 if cell_content is None:
                     imagen = self.imagenes["0"]
-                elif 'point' in cell_content:
-                    #point_value = cell_content
+                elif 'point' in str(cell_content):
                     imagen = self.imagenes[cell_content]
                 elif cell_content == 'x2':
                     imagen = self.imagenes["x2"]
@@ -363,10 +428,9 @@ class InterfazTableroGUI:
 
                 self.canvas.create_image(x1, y1, image=imagen, anchor="nw")
         
-        # Vincular el evento de clic
+        # Vincular el evento de clic para el jugador actual si es humano
         self.canvas.unbind("<Button-1>")
         if isinstance(self.game.players[self.game.current_turn], HumanPlayer):
             self.canvas.bind("<Button-1>", self.seleccionar_casilla)
-            
 # Ejecutar la interfaz
 InterfazTableroGUI()
