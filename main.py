@@ -262,31 +262,38 @@ class InterfazTableroGUI:
         if not self.game:
             return
 
-        current_player = self.game.players[self.game.current_turn]
-        horse = self.game.board.get_horse(self.game.current_turn)
+        try:
+            current_player = self.game.players[self.game.current_turn]
+            horse = self.game.board.get_horse(self.game.current_turn)
         
-        if isinstance(current_player, (AIPlayer1, AIPlayer2)):
-            move = current_player.get_move(self.game.board, horse)
-            if move:
-                self.game.update_state(horse, move)
-                self.actualizar_puntuaciones()
-                self.dibujar_tablero()
-            else:
-                self.mensaje_estado.config(text=f"La IA {self.game.current_turn} no tiene movimientos válidos.")
-            
-            if self.game.is_game_over():
-                self.dibujar_tablero()
-                self.finalizar_juego()
-            else:
+            if isinstance(current_player, (AIPlayer1, AIPlayer2)):
+                print(f"AI ({horse.color}) está buscando un movimiento...")
+                move = current_player.get_move(self.game.board, horse)
+                print(f"AI ({horse.color}) ha elegido mover a: {move}")
+                if move:
+                    self.game.update_state(horse, move)
+                    self.actualizar_puntuaciones()
+                    self.dibujar_tablero()
+                else:
+                    self.mensaje_estado.config(text=f"La IA {self.game.current_turn} no tiene movimientos válidos.")
+                
+                if self.game.is_game_over():
+                    self.finalizar_juego()
+                    return
+
+                
                 self.game.switch_turn()
                 self.dibujar_tablero()  # Actualizar la interfaz y re-vincular el evento de clic
+                
                 if isinstance(self.game.players[self.game.current_turn], (AIPlayer1, AIPlayer2)):
-                    self.ventana.after(500, self.realizar_movimiento_ia)
+                     self.ventana.after(500, self.realizar_movimiento_ia)
                 else:
                     self.mensaje_estado.config(text=f"Turno del jugador {self.game.current_turn}")
-        else:
-            self.mensaje_estado.config(text=f"Turno del jugador {self.game.current_turn}")
-
+            else:
+                self.mensaje_estado.config(text=f"Turno del jugador {self.game.current_turn}")
+        except Exception as e:
+            print(f"Error durante el movimiento de la IA: {e}")
+            self.mensaje_estado.config(text=f"Error durante el movimiento de la IA: {e}")
 
     def resaltar_movimientos_posibles(self, movimientos):
         # Limpia resaltados anteriores
@@ -379,6 +386,7 @@ class InterfazTableroGUI:
         self.canvas.unbind("<Button-1>")
         self.boton_iniciar.config(state=tk.NORMAL)
         self.modo_juego.config(state="readonly")
+        messagebox.showinfo("Juego Terminado", winner_message)
 
     def actualizar_puntuaciones(self):
         # Actualizar las etiquetas de puntuaciones

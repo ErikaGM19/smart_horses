@@ -41,6 +41,9 @@ class Game:
         else:
             return "¡Empate!"
 
+    def is_game_over(self):
+        return self.board.is_game_over()
+
     def get_scores(self):
         return {
             'white': self.board.get_horse('white').points,

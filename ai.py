@@ -13,28 +13,20 @@ class AIPlayer(Player):
         return mapping.get(difficulty, 2)
     
     def get_move(self, board, horse):
-        valid_moves = horse.get_valid_moves(board)
-        if not valid_moves:
-            return None
-        best_score = -math.inf
-        best_move = None
-        for move in valid_moves:
-            board_copy = copy.deepcopy(board)
-            horse_copy = copy.deepcopy(horse)
-            board_copy.move_horse(horse_copy, move)
-            score = self.evaluate(board_copy)
-            if score > best_score:
-                best_score = score
-                best_move = move
+        print(f"AI ({horse.color}) buscando movimiento con profundidad {self.depth}")
+        best_score, best_move = self.minimax(board, horse, self.depth, True, -math.inf, math.inf)
+        print(f"AI ({horse.color}) seleccionó movimiento: {best_move} con puntuación: {best_score}")
         return best_move
 
     def minimax(self, board, horse, depth, maximizing_player, alpha, beta):
         if depth == 0 or board.is_game_over():
-            return self.evaluate(board), None
+            eval_score = self.evaluate(board)
+            return eval_score, None
 
         valid_moves = horse.get_valid_moves(board)
         if not valid_moves:
-            return self.evaluate(board), None
+            eval_score = self.evaluate(board)
+            return eval_score, None
 
         best_move = None
 
@@ -92,12 +84,9 @@ class AIPlayer(Player):
         # Factor 2: Distancia al punto más cercano
         points_positions = self.get_points_positions(board)
         if points_positions:
-            distances = [self.calculate_distance(horse.position, point) for point in points_positions]
+            distances = [self.calculate_euclidean_distance(horse.position, point) for point in points_positions]
             min_distance = min(distances)
             score -= min_distance * 20  # Penalizar fuertemente la distancia al punto más cercano
-        else:
-            # No hay más puntos en el tablero
-            pass
 
         # Factor 3: Número de movimientos válidos
         num_valid_moves = len(horse.get_valid_moves(board))
@@ -105,7 +94,7 @@ class AIPlayer(Player):
 
         # Factor 4: Proximidad al oponente
         opponent_horse = board.get_opponent_horse(horse.color)
-        distance_to_opponent = self.calculate_distance(horse.position, opponent_horse.position)
+        distance_to_opponent = self.calculate_euclidean_distance(horse.position, opponent_horse.position)
         if distance_to_opponent < 3:
             score -= (3 - distance_to_opponent) * 10  # Penalizar estar demasiado cerca del oponente
 
@@ -116,12 +105,12 @@ class AIPlayer(Player):
         for x in range(board.size):
             for y in range(board.size):
                 cell = board.get_grid((x, y))
-                if cell and ('point' in cell or cell == 'x2'):
+                if cell and ('point' in cell):
                     points_positions.append((x, y))
         return points_positions
 
-    def calculate_distance(self, start_pos, end_pos):
-        return abs(start_pos[0] - end_pos[0]) + abs(start_pos[1] - end_pos[1])
+    def calculate_euclidean_distance(self, start_pos, end_pos):
+        return math.sqrt((start_pos[0] - end_pos[0]) ** 2 + (start_pos[1] - end_pos[1]) ** 2)
 
 
 class AIPlayer1(AIPlayer):
