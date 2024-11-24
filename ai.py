@@ -1,4 +1,3 @@
-# ai.py
 import copy
 from player import Player
 import math
@@ -29,13 +28,6 @@ class AIPlayer(Player):
 
         valid_moves = horse.get_valid_moves(board)
 
-        points_to_block = [
-            move for move in valid_moves
-            if 'point' in str(board.get_grid(move)) and int(board.get_grid(move).split('_')[0]) >= 8
-        ]
-        if points_to_block:
-            return 1000, points_to_block[0]
-
         if not valid_moves:
             eval_score = self.evaluate(board, horse, depth)
             print(f"Minimax: No hay movimientos válidos. Evaluación: {eval_score}")
@@ -47,7 +39,7 @@ class AIPlayer(Player):
             max_eval = -math.inf
             for move in valid_moves:
                 board_copy = copy.deepcopy(board)
-                horse_copy = copy.deepcopy(horse)
+                horse_copy = horse.copy()
                 board_copy.move_horse(horse_copy, move)
                 eval, _ = self.minimax(board_copy, horse_copy, depth - 1, False, alpha, beta)
                 if eval > max_eval:
@@ -65,9 +57,9 @@ class AIPlayer(Player):
             opponent_moves = opponent_horse.get_valid_moves(board)
             for move in opponent_moves:
                 board_copy = copy.deepcopy(board)
-                opponent_horse_copy = copy.deepcopy(opponent_horse)
+                opponent_horse_copy = opponent_horse.copy()
                 board_copy.move_horse(opponent_horse_copy, move)
-                eval, _ = self.minimax(board_copy, opponent_horse_copy, depth - 1, True, alpha, beta)
+                eval, _ = self.minimax(board_copy, horse, depth - 1, True, alpha, beta)
                 if eval < min_eval:
                     min_eval = eval
                     best_move = move
@@ -143,62 +135,46 @@ class AIPlayer(Player):
         return score
 
     def evaluate_complex(self, board, horse, current_depth):
-        # Heurística avanzada: incluye aspectos estratégicos a largo plazo
-        score = horse.points * (100 + 10 * current_depth)
+        score = horse.points * 1000  # Peso significativo para los puntos acumulados
 
-        # Distancia al punto más cercano
+        # Obtener posiciones y valores de las fichas
         points_positions = self.get_points_positions(board)
         if points_positions:
-            distances = [self.calculate_euclidean_distance(horse.position, point) for point in points_positions]
-            min_distance = min(distances)
-            score -= min_distance * (20 - 2 * current_depth)
+            # Calcular puntuación basada en las fichas disponibles
+            for pos in points_positions:
+                value = int(board.get_grid(pos).split('_')[0])
+                distance = self.calculate_manhattan_distance(horse.position, pos)
+                # Añadir bono inversamente proporcional a la distancia y directamente proporcional al valor
+                score += (value * 100) / (distance + 1)
 
-        # Incentivar recoger puntos altos
-        reachable_points = [
-            move for move in horse.get_valid_moves(board)
-            if 'point' in str(board.get_grid(move))
-        ]
-        reachable_points_values = [
-            int(board.get_grid(move).split('_')[0]) for move in reachable_points
-        ]
-        if reachable_points_values:
-            score += max(reachable_points_values) * 60
+        # Penalizar moverse a posiciones visitadas
+        valid_moves = horse.get_valid_moves(board)
+        for move in valid_moves:
+            if move in horse.visited_positions:
+                score -= 500  # Penalización alta para evitar ciclos
 
-        visited_moves = [
-            move for move in horse.get_valid_moves(board)
-            if move in horse.visited_positions
-        ]
-        score -= len(visited_moves) * 30
-
-        # Considerar movimientos del oponente
-        opponent_horse = board.get_opponent_horse(horse.color)
-        opponent_moves = opponent_horse.get_valid_moves(board)
-
-        # Considerar x2 estratégicamente
+        # Incentivar recoger multiplicadores 'x2'
         reachable_multipliers = [
-            move for move in horse.get_valid_moves(board)
+            move for move in valid_moves
             if board.get_grid(move) == 'x2'
         ]
-        if reachable_multipliers:
-            score += len(reachable_multipliers) * 50
+        score += len(reachable_multipliers) * 300  # Bonificación alta
 
-        # Penalizar puntos que el oponente pueda tomar
+        # Considerar la movilidad futura
+        future_moves = sum(len(horse.get_valid_moves(board)) for move in valid_moves)
+        score += future_moves * 10  # Incentivar tener más opciones
+
+        # Considerar la distancia al oponente
         opponent_horse = board.get_opponent_horse(horse.color)
-        distances_to_opponent = [
-            self.calculate_euclidean_distance(opponent_horse.position, point) for point in points_positions
-        ]
-
-        nearest_opponent_point = float('inf')
-
-        if distances_to_opponent:
-            nearest_opponent_point = min(distances_to_opponent)
-            score -= nearest_opponent_point * 30  # Penalización fuerte.
-
-        # Incentivar bloquear puntos clave del oponente
-        if nearest_opponent_point < 2:
-            score += 50  # Recompensar el bloqueo de puntos.
+        opponent_distance = self.calculate_manhattan_distance(horse.position, opponent_horse.position)
+        score -= (8 - opponent_distance) * 50  # Penalizar si el oponente está cerca
 
         return score
+
+
+    def calculate_manhattan_distance(self, start_pos, end_pos):
+        return abs(start_pos[0] - end_pos[0]) + abs(start_pos[1] - end_pos[1])
+
 
     def get_points_positions(self, board):
         points_positions = []

@@ -1,4 +1,7 @@
 # horse.py
+
+
+
 class Horse:
     def __init__(self, color, position):
         self.color = color
@@ -66,3 +69,27 @@ class Horse:
                             continue
                         last_resort_moves.append((nx, ny))
                 return last_resort_moves
+
+    # def get_valid_moves(self, board):
+    #     moves = [
+    #         (-2, -1), (-2, 1), (-1, -2), (-1, 2),
+    #         (1, -2), (1, 2), (2, -1), (2, 1)
+    #     ]
+    #     valid_moves = []
+    #     x, y = self.position
+    #     for dx, dy in moves:
+    #         nx, ny = x + dx, y + dy
+    #         if 0 <= nx < board.size and 0 <= ny < board.size:
+    #             cell = board.get_grid((nx, ny))
+    #             if cell in ['white_horse', 'black_horse']:
+    #                 continue  # Evitar posiciones ocupadas
+    #             valid_moves.append((nx, ny))
+    #     return valid_moves
+
+    def copy(self):
+        new_horse = Horse(self.color, self.position)
+        new_horse.points = self.points
+        new_horse.has_x2 = self.has_x2
+        new_horse.visited_positions = self.visited_positions.copy()
+        new_horse.previous_position = self.previous_position
+        return new_horse
