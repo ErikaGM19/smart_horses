@@ -29,9 +29,6 @@ class Game:
     def update_state(self, horse, new_position):
         self.board.move_horse(horse, new_position)
 
-    def is_game_over(self):
-        return self.board.is_game_over()
-
     def declare_winner(self):
         scores = self.get_scores()
         if scores['white'] > scores['black']:

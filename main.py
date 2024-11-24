@@ -356,26 +356,6 @@ class InterfazTableroGUI:
                 self.mensaje_estado.config(text="Movimiento inválido. Seleccione un destino válido.")
                 # Mantener las casillas resaltadas
 
-    def resaltar_movimientos_posibles(self, movimientos):
-        # Limpia resaltados anteriores
-        for casilla in self.casillas_resaltadas:
-            self.canvas.delete(casilla)
-        self.casillas_resaltadas.clear()
-
-        # Resalta las nuevas casillas disponibles
-        for fila, col in movimientos:
-            x1 = col * self.tam_celda
-            y1 = fila * self.tam_celda
-            x2 = x1 + self.tam_celda
-            y2 = y1 + self.tam_celda
-            # Crear un rectángulo semitransparente verde
-            resaltado = self.canvas.create_rectangle(
-                x1, y1, x2, y2,
-                fill='#00FF00',
-                stipple='gray50',
-                tags='resaltado'
-            )
-            self.casillas_resaltadas.append(resaltado)
 
 
     def finalizar_juego(self):
